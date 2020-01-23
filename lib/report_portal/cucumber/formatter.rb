@@ -1,23 +1,3 @@
-# Copyright 2015 EPAM Systems
-# 
-# 
-# This file is part of Report Portal.
-# 
-# Report Portal is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Lesser General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-# 
-# ReportPortal is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Lesser General Public License for more details.
-# 
-# You should have received a copy of the GNU Lesser General Public License
-# along with Report Portal.  If not, see <http://www.gnu.org/licenses/>.
-
-require 'thread'
-
 require_relative 'report'
 
 module ReportPortal
@@ -80,6 +60,19 @@ module ReportPortal
         queue.push([:done, ReportPortal.now])
         sleep 0.03 while !queue.empty? || queue.num_waiting == 0 # TODO: how to interrupt launch if the user aborted execution
         @thread.kill
+      end
+
+      def process_message(report_method_name, *method_args)
+        args = [report_method_name, *method_args, ReportPortal.now]
+        if use_same_thread_for_reporting?
+          report.public_send(*args)
+        else
+          @queue.push(args)
+        end
+      end
+
+      def use_same_thread_for_reporting?
+        ReportPortal::Settings.instance.formatter_modes.include?('use_same_thread_for_reporting')
       end
     end
   end

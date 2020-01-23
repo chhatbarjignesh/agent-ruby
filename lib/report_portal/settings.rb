@@ -1,21 +1,3 @@
-# Copyright 2015 EPAM Systems
-# 
-# 
-# This file is part of Report Portal.
-# 
-# Report Portal is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Lesser General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-# 
-# ReportPortal is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Lesser General Public License for more details.
-# 
-# You should have received a copy of the GNU Lesser General Public License
-# along with Report Portal.  If not, see <http://www.gnu.org/licenses/>.
-
 require 'yaml'
 require 'singleton'
 
@@ -23,10 +5,8 @@ module ReportPortal
   class Settings
     include Singleton
 
-    PREFIX = 'rp_'
-
     def initialize
-      filename = ENV.fetch("#{PREFIX}config") do
+      filename = ENV.fetch('rp_config') do
         glob = Dir.glob('{,.config/,config/}report{,-,_}portal{.yml,.yaml}')
         p "Multiple configuration files found for ReportPortal. Using the first one: #{glob.first}" if glob.size > 1
         glob.first
@@ -45,12 +25,16 @@ module ReportPortal
         # for parallel execution only
         'use_standard_logger' => false,
         'launch_id' => false,
-        'file_with_launch_id' => false,
+        'file_with_launch_id' => false
       }
 
       keys.each do |key, is_required|
         define_singleton_method(key.to_sym) { setting(key) }
-        fail "ReportPortal: Define environment variable '#{PREFIX}#{key}' or key #{key} in the configuration YAML file" if is_required && public_send(key).nil?
+        next unless is_required && public_send(key).nil?
+
+        env_variable_name = env_variable_name(key)
+        raise "ReportPortal: Define environment variable '#{env_variable_name.upcase}', '#{env_variable_name}' "\
+          "or key #{key} in the configuration YAML file"
       end
     end
 
@@ -62,15 +46,19 @@ module ReportPortal
       setting('formatter_modes') || []
     end
 
-    def project_url
-      "#{endpoint}/#{project}"
-    end
-
     private
 
     def setting(key)
-      pkey = PREFIX + key
-      ENV.key?(pkey) ? YAML.load(ENV[pkey]) : @properties[key]
+      env_variable_name = env_variable_name(key)
+      return YAML.safe_load(ENV[env_variable_name.upcase]) if ENV.key?(env_variable_name.upcase)
+
+      return YAML.safe_load(ENV[env_variable_name]) if ENV.key?(env_variable_name)
+
+      @properties[key]
+    end
+
+    def env_variable_name(key)
+      'rp_' + key
     end
   end
 end

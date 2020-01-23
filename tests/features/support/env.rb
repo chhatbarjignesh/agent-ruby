@@ -1,33 +1,21 @@
-# Copyright 2015 EPAM Systems
-# 
-# 
-# This file is part of Report Portal.
-# 
-# Report Portal is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Lesser General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-# 
-# ReportPortal is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Lesser General Public License for more details.
-# 
-# You should have received a copy of the GNU Lesser General Public License
-# along with Report Portal.  If not, see <http://www.gnu.org/licenses/>.
-
+require 'base64'
 require 'cucumber'
 require 'pathname'
 
-$odd_even = 0
-$odd_even_started = false
+file_path = Pathname(__dir__).parent.parent + 'assets' + 'crane.png'
 
-After do |scenario|
-  $odd_even += 1 if $odd_even_started
-  if scenario.failed?
-    image = Pathname(__FILE__).dirname.parent.parent + 'assets' + 'crane.png'
-    embed image, 'image/png', 'Failure screenshot'
-  end
+After('@file_via_path') do
+  embed file_path, 'image/png', 'Image'
+end
+
+After('@file_via_src') do
+  src = File.read(file_path, mode: 'rb')
+  embed src, 'image/png', 'Image'
+end
+
+After('@file_via_base64_src') do
+  base64_src = Base64.encode64(File.read(file_path, mode: 'rb'))
+  embed base64_src, 'image/png;base64', 'Image'
 end
 
 Before('@pass_before') do
@@ -39,11 +27,11 @@ After('@pass_after') do
 end
 
 Before('@fail_before') do
-  fail 'Failure in before hook'
+  raise 'Failure in before hook'
 end
 
 After('@fail_after') do
-  fail 'Failure in after hook'
+  raise 'Failure in after hook'
 end
 
 Before do
@@ -56,6 +44,29 @@ end
 
 AfterStep do
   if @invoke_after_step
-    fail 'I failed!'
+    raise 'I failed!'
   end
+end
+
+AfterConfiguration do |config|
+  config.on_event :test_run_started do
+    ReportPortal.on_event :prepare_start_item_request do |rp_event|
+      rp_event.request_data[:parameters] = [{ key: 'param_name', value: 'param_value' }]
+    end
+    ReportPortal.on_event :prepare_start_item_request do |rp_event|
+      rp_event.request_data[:parameters] << { key: 'param_name2', value: 'param_value2' }
+    end
+  end
+end
+
+at_exit do
+  items = ReportPortal.get_items(launch_id: ReportPortal.launch_id, name: 'Scenario Outline: Conditionally passing outline, Examples (#1)')
+  raise "Incorrect items: #{items}" if items.size != 1
+  raise "Incorrect items: #{items}" if items[0].description != 'tests/features/without_background.feature:108'
+
+  ReportPortal.delete_items(items.map(&:id))
+  items = ReportPortal.get_items(launch_id: ReportPortal.launch_id, name: 'Scenario Outline: Conditionally passing outline, Examples (#1)')
+  raise 'Item is not deleted' unless items.empty?
+
+  puts 'at_exit hook completed successfully'
 end

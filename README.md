@@ -1,8 +1,26 @@
 # Ruby Cucumber and RSpec formatters for ReportPortal
 
+ [Download](https://rubygems.org/gems/reportportal)
+ 
+[![Join Slack chat!](https://reportportal-slack-auto.herokuapp.com/badge.svg)](https://reportportal-slack-auto.herokuapp.com)
+[![stackoverflow](https://img.shields.io/badge/reportportal-stackoverflow-orange.svg?style=flat)](http://stackoverflow.com/questions/tagged/reportportal)
+[![UserVoice](https://img.shields.io/badge/uservoice-vote%20ideas-orange.svg?style=flat)](https://rpp.uservoice.com/forums/247117-report-portal)
+[![Build with Love](https://img.shields.io/badge/build%20with-❤%EF%B8%8F%E2%80%8D-lightgrey.svg)](http://reportportal.io?style=flat)
+
+
 ## Installation
 
-Use Ruby 2.2+
+Use Ruby 2.3+
+
+**Rubygems**
+
+From https://rubygems.org
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+gem install reportportal
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+or
 
 Add `gem 'reportportal', git: 'https://github.com/reportportal/agent-ruby.git'` to your `Gemfile`. Run `bundle install`.
 
@@ -42,8 +60,9 @@ Request to https://rp.epam.com/reportportal-ws/api/v1/pass-team/launch//finish p
  - is_debug - set to true to mark the launch as 'DEBUG' (it will appear in Debug tab in Report Portal)
  - use_standard_logger - set to true to enable logging via standard Ruby Logger class to ReportPortal. Note that log messages are transformed to strings before sending.
 
-Each of these settings can be overridden by an environment variable with the same name and 'rp_' prefix (e.g. 'rp_uuid' for 'uuid'). Environment variables take precedence over YAML configuration.
-Environment variable values are parsed as YAML entities.
+Each of these settings can be overridden by an environment variable with the same name and 'rp_' prefix (e.g. 'rp_uuid' for 'uuid'). Environment variable can be upper cased (e.g. 'RP_UUID').
+Environment variables take precedence over YAML configuration.
+Environment variable values are parsed as YAML values.
 
 ## WebMock configuration
 If you use WebMock for stubbing and setting expectations on HTTP requests in Ruby,
@@ -58,8 +77,12 @@ WebMock.disable_net_connect!(:net_http_connect_on_start => true, :allow_localhos
 
 The following modes are supported:
 
-* attach_to_launch (do not create a new launch but add executing features/scenarios to an existing launch. Use launch_id or file_with_launch_id settings to configure that. If they are not present client will check rp_launch_id.tmp in `Dir.tmpdir`)
-* group_by_folder (represent folders with features as nested suites in Report Portal) # TODO: not supported by new Cucumber formatter currently
+| Name | Purpose |
+| --- | --- |
+| attach_to_launch | Do not create a new launch but add executing features/scenarios to an existing launch. Use launch_id or file_with_launch_id settings to configure that. If they are not present client will check rp_launch_id.tmp in `Dir.tmpdir`)
+| use_same_thread_for_reporting | Send reporting commands in the same main thread used for running tests. This mode is useful for debugging this Report Portal client. It changes default behavior to send commands in the separate thread. Default behavior is there not to slow test execution. |
+| skip_reporting_hierarchy | Do not create items for folders and feature files |
+| use_persistent_connection | Use persistent connection to connect to the server |
 
 ## Logging
 Experimental support for three common logging frameworks was added:
