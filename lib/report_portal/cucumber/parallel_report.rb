@@ -52,7 +52,7 @@ module ReportPortal
       end
 
       def test_run_finished(_event, desired_time = ReportPortal.now)
-        end_feature(desired_time) unless @parent_item_node.is_root?
+        end_feature(desired_time) unless @feature_node
 
         if ParallelTests.first_process?
           ParallelTests.wait_for_other_processes_to_finish

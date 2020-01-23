@@ -7,58 +7,51 @@ module ReportPortal
       def initialize(config)
         ENV['REPORT_PORTAL_USED'] = 'true'
 
-        @thread = Thread.new do
-          initialize_report
-          loop do
-            method_arr = queue.pop
-            report.public_send(*method_arr)
-          end
-        end
-        if @thread.respond_to?(:report_on_exception) # report_on_exception defined only on Ruby 2.4 +
-          @thread.report_on_exception = true
-        else
-          @thread.abort_on_exception = true
-        end
+        setup_message_processing
 
         @io = config.out_stream
 
-        handle_cucumber_events(config)
+        %i[test_case_started test_case_finished test_step_started test_step_finished test_run_finished].each do |event_name|
+          config.on_event event_name do |event|
+            process_message(event_name, event)
+          end
+        end
+        config.on_event(:test_run_finished) { finish_message_processing }
       end
 
       def puts(message)
-        queue.push([:puts, message, ReportPortal.now])
+        process_message(:puts, message)
         @io.puts(message)
         @io.flush
       end
 
       def embed(*args)
-        queue.push([:embed, *args, ReportPortal.now])
+        process_message(:embed, *args)
       end
 
       private
 
-      def queue
-        @queue ||= Queue.new
+      def report
+        @report ||= ReportPortal::Cucumber::Report.new
       end
 
-      def initialize_report
-        @report = ReportPortal::Cucumber::Report.new
-      end
+      def setup_message_processing
+        return if use_same_thread_for_reporting?
 
-      attr_reader :report
-
-      def handle_cucumber_events(config)
-        [:test_case_started, :test_case_finished, :test_step_started, :test_step_finished].each do |event_name|
-          config.on_event(event_name) do |event|
-            queue.push([event_name, event, ReportPortal.now])
+        @queue = Queue.new
+        @thread = Thread.new do
+          loop do
+            method_arr = @queue.pop
+            report.public_send(*method_arr)
           end
         end
-        config.on_event :test_run_finished, &method(:on_test_run_finished)
+        @thread.abort_on_exception = true
       end
 
-      def on_test_run_finished(_event)
-        queue.push([:done, ReportPortal.now])
-        sleep 0.03 while !queue.empty? || queue.num_waiting == 0 # TODO: how to interrupt launch if the user aborted execution
+      def finish_message_processing
+        return if use_same_thread_for_reporting?
+
+        sleep 0.03 while !@queue.empty? || @queue.num_waiting.zero? # TODO: how to interrupt launch if the user aborted execution
         @thread.kill
       end
 
