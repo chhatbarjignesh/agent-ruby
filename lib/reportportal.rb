@@ -124,9 +124,9 @@ module ReportPortal
     # needed for parallel formatter
     def item_id_of(name, parent_node)
       path = if parent_node.is_root? # folder without parent folder
-               "item?filter.eq.launch=#{@launch_id}&filter.eq.name=#{URI.escape(name)}&filter.size.path=0"
+               "item?filter.eq.launchid=#{@launch_id}&filter.eq.name=#{URI.escape(name)}&filter.size.path=0"
              else
-               "item?filter.eq.launch=#{@launch_id}&filter.eq.parent=#{parent_node.content.id}&filter.eq.name=#{URI.escape(name)}"
+               "item?filter.eq.launchid=#{@launch_id}&filter.eq.parent=#{parent_node.content.id}&filter.eq.name=#{URI.escape(name)}"
              end
       data = send_request(:get, path)
       if data.key? 'content'
@@ -137,9 +137,9 @@ module ReportPortal
     # needed for parallel formatter
     def close_child_items(parent_id)
       path = if parent_id.nil?
-               "item?filter.eq.launch=#{@launch_id}&filter.size.path=0&page.page=1&page.size=100"
+               "item?filter.eq.launchid=#{@launch_id}&filter.eq.path=0&page.page=1&page.size=100"
              else
-               "item?filter.eq.launch=#{@launch_id}&filter.eq.parent=#{parent_id}&page.page=1&page.size=100"
+               "item?filter.eq.launchid=#{@launch_id}&filter.eq.parent=#{parent_id}&page.page=1&page.size=100"
              end
       ids = []
       loop do
