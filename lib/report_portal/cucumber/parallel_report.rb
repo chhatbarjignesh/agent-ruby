@@ -26,12 +26,12 @@ module ReportPortal
             f.flush
             f.flock(File::LOCK_UN)
           end
-          # @folder_creation_tracking_file = Pathname(Dir.tmpdir)  + "folder_creation_tracking_#{ReportPortal.launch_id}.lck"
-          # File.open(@folder_creation_tracking_file, 'w+') do |f|
-          #   f.flock(File::LOCK_EX)
-          #   f.flush
-          #   f.flock(File::LOCK_UN)
-          # end
+          @folder_creation_tracking_file = Pathname(Dir.tmpdir)  + "folder_creation_tracking_#{ReportPortal.launch_id}.lck"
+          File.open(@folder_creation_tracking_file, 'w+') do |f|
+            f.flock(File::LOCK_EX)
+            f.flush
+            f.flock(File::LOCK_UN)
+          end
         else
           start_time = monotonic_time
           loop do

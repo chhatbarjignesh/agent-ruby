@@ -175,48 +175,48 @@ module ReportPortal
               tags = feature.tags.map(&:name)
               type = :TEST
             end
-            #is_created = false
-            # if parallel? && name.include?("Folder:")
-            #   folder_name = name.gsub("Folder: ", "")
-            #   folder_name_for_tracker = "./#{folder_name}" # create a full path file name to use for tracking
-            #   if index > 0
-            #     folder_name_for_tracker = "./"
-            #     for path_index in (0...path_components_no_feature.length)
-            #       folder_name_for_tracker += "#{path_components_no_feature[path_index]}/"
-            #     end
-            #   end
-            #   @folder_creation_tracking_file = (Pathname(Dir.tmpdir)) + "folder_creation_tracking_#{ReportPortal.launch_id}.lck"
-            #   File.open(@folder_creation_tracking_file, 'r+') do |f|
-            #     f.flock(File::LOCK_SH)
-            #     report_portal_folders = f.read
-            #     if report_portal_folders
-            #       report_portal_folders_array = report_portal_folders.split(/\n/)
-            #       if report_portal_folders_array.include?(folder_name_for_tracker)
-            #         is_created = true
-            #       end
-            #     end
-            #     f.flock(File::LOCK_UN)
-            #   end
-            #   unless is_created
-            #     File.open(@folder_creation_tracking_file, 'a') do |f|
-            #       f.flock(File::LOCK_EX)
-            #       f.write("\n#{folder_name_for_tracker}")
-            #       f.flush
-            #       f.flock(File::LOCK_UN)
-            #     end
-            #   end
-            # end
-            # if parallel? && index < path_components.size - 1 && is_created
-            #  id_of_created_item = ReportPortal.item_id_of(name, parent_node)
-            #  item = ReportPortal::TestItem.new(name: name, type: type, id: id_of_created_item, start_time: time_to_send(desired_time), description: description, closed: false, tags: tags)
-            #  child_node = Tree::TreeNode.new(path_component, item)
-            #  parent_node << child_node
-            #else
+            is_created = false
+            if parallel? && name.include?("Folder:")
+              folder_name = name.gsub("Folder: ", "")
+              folder_name_for_tracker = "./#{folder_name}" # create a full path file name to use for tracking
+              if index > 0
+                folder_name_for_tracker = "./"
+                for path_index in (0...path_components_no_feature.length)
+                  folder_name_for_tracker += "#{path_components_no_feature[path_index]}/"
+                end
+              end
+              @folder_creation_tracking_file = (Pathname(Dir.tmpdir)) + "folder_creation_tracking_#{ReportPortal.launch_id}.lck"
+              File.open(@folder_creation_tracking_file, 'r+') do |f|
+                f.flock(File::LOCK_SH)
+                report_portal_folders = f.read
+                if report_portal_folders
+                  report_portal_folders_array = report_portal_folders.split(/\n/)
+                  if report_portal_folders_array.include?(folder_name_for_tracker)
+                    is_created = true
+                  end
+                end
+                f.flock(File::LOCK_UN)
+              end
+              unless is_created
+                File.open(@folder_creation_tracking_file, 'a') do |f|
+                  f.flock(File::LOCK_EX)
+                  f.write("\n#{folder_name_for_tracker}")
+                  f.flush
+                  f.flock(File::LOCK_UN)
+                end
+              end
+            end
+            if parallel? && index < path_components.size - 1 && is_created
+             id_of_created_item = ReportPortal.item_id_of(name, parent_node)
+             item = ReportPortal::TestItem.new(name: name, type: type, id: id_of_created_item, start_time: time_to_send(desired_time), description: description, closed: false, tags: tags)
+             child_node = Tree::TreeNode.new(path_component, item)
+             parent_node << child_node
+            else
               item = ReportPortal::TestItem.new(name: name, type: type, id: nil, start_time: time_to_send(desired_time), description: description, closed: false, tags: tags)
               child_node = Tree::TreeNode.new(path_component, item)
               parent_node << child_node
               item.id = ReportPortal.start_item(child_node)
-            #end
+            end
           end
           parent_node = child_node
         end

@@ -39,6 +39,7 @@ module ReportPortal
     def start_launch(description, start_time = now)
       data = { name: Settings.instance.launch, start_time: start_time, tags: Settings.instance.tags, description: description, mode: Settings.instance.launch_mode }
       @launch_id = send_request(:post, 'launch', json: data)['id']
+      $stdout.puts "launchid: #{@launch_id}"
     end
 
     def finish_launch(end_time = now)
@@ -124,7 +125,7 @@ module ReportPortal
     # needed for parallel formatter
     def item_id_of(name, parent_node)
       path = if parent_node.is_root? # folder without parent folder
-               "item?filter.eq.launchid=#{@launch_id}&filter.eq.name=#{URI.escape(name)}&filter.size.path=0"
+               "item?filter.eq.launchid=#{@launch_id}&filter.eq.name=#{URI.escape(name)}&filter.eq.path=0"
              else
                "item?filter.eq.launchid=#{@launch_id}&filter.eq.parent=#{parent_node.content.id}&filter.eq.name=#{URI.escape(name)}"
              end
