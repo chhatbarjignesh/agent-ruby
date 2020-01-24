@@ -146,7 +146,7 @@ module ReportPortal
       def time_to_send(desired_time)
         time_to_send = desired_time
         if time_to_send <= ReportPortal.last_used_time
-          time_to_send = ReportPortal.last_used_time + rand(30..60)
+          time_to_send = ReportPortal.last_used_time + 1
         end
         ReportPortal.last_used_time = time_to_send
       end
