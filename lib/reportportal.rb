@@ -124,7 +124,7 @@ module ReportPortal
     # needed for parallel formatter
     def item_id_of(name, parent_node)
       path = if parent_node.is_root? # folder without parent folder
-               "item?filter.eq.launchid=#{@launch_id}&filter.eq.name=#{URI.escape(name)}&filter.size.path=0"
+               "item?filter.eq.launchid=#{@launch_id}&filter.eq.name=#{URI.escape(name)}&filter.eq.path=0"
              else
                "item?filter.eq.launchid=#{@launch_id}&filter.eq.parent=#{parent_node.content.id}&filter.eq.name=#{URI.escape(name)}"
              end
