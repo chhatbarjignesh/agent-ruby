@@ -45,7 +45,6 @@ module ReportPortal
       @launch_id = send_request(:post, 'launch', json: data)['id']
       @uuid = send_request(:get, "launch/uuid/#{@launch_id}")['id']
       File.open(file_with_uuid, 'w') { |file| file.write(@uuid) }
-      $stdout.puts "#{file_with_uuid}"
     end
 
     def finish_launch(end_time = now)
