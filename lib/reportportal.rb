@@ -17,10 +17,14 @@ module ReportPortal
   LOG_LEVELS = { error: 'ERROR', warn: 'WARN', info: 'INFO', debug: 'DEBUG', trace: 'TRACE', fatal: 'FATAL', unknown: 'UNKNOWN' }.freeze
 
   class << self
-    attr_accessor :launch_id, :current_scenario, :last_used_time
+    attr_accessor :launch_id, :current_scenario, :last_used_time, :uuid
 
     def now
       (current_time.to_f * 1000).to_i
+    end
+
+    def file_with_uuid
+      Pathname(Dir.tmpdir) + "uuid_of_launch_id_#{@launch_id}.lck"
     end
 
     def status_to_level(status)
@@ -39,6 +43,9 @@ module ReportPortal
     def start_launch(description, start_time = now)
       data = { name: Settings.instance.launch, start_time: start_time, tags: Settings.instance.tags, description: description, mode: Settings.instance.launch_mode }
       @launch_id = send_request(:post, 'launch', json: data)['id']
+      @uuid = send_request(:get, "launch/uuid/#{@launch_id}")['id']
+      File.open(file_with_uuid, 'w') { |file| file.write(@uuid) }
+      $stdout.puts "#{file_with_uuid}"
     end
 
     def finish_launch(end_time = now)
