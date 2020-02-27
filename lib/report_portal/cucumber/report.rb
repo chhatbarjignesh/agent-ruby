@@ -213,7 +213,7 @@ module ReportPortal
             #  child_node = Tree::TreeNode.new(path_component, item)
             #  parent_node << child_node
             #else
-              item = ReportPortal::TestItem.new(name: name, type: type, id: nil, start_time: time_to_send(desired_time), description: description, closed: false, tags: tags, attribute: attribute)
+              item = ReportPortal::TestItem.new(name: name, type: type, id: nil, start_time: time_to_send(desired_time), description: description, closed: false, tags: tags, attributes: attribute)
               child_node = Tree::TreeNode.new(path_component, item)
               parent_node << child_node
               item.id = ReportPortal.start_item(child_node)
