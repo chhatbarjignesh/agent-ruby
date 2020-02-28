@@ -56,8 +56,11 @@ module ReportPortal
         description = test_case.location.to_s
         tags = test_case.tags.map(&:name)
         type = :STEP
+        tags = tags.map{ |x| {:key => "tags",:value =>  x} }
+        attribute = [{:key => "feature", :value => "#{feature.name}"}]
+        attribute.concat(tags)
 
-        ReportPortal.current_scenario = ReportPortal::TestItem.new(name: name, type: type, id: nil, start_time: time_to_send(desired_time), description: description, closed: false, tags: tags)
+        ReportPortal.current_scenario = ReportPortal::TestItem.new(name: name, type: type, id: nil, start_time: time_to_send(desired_time), description: description, closed: false, tags: '', attributes: attribute)
         scenario_node = Tree::TreeNode.new(SecureRandom.hex, ReportPortal.current_scenario)
         @feature_node << scenario_node
         ReportPortal.current_scenario.id = ReportPortal.start_item(scenario_node)
@@ -171,9 +174,12 @@ module ReportPortal
             else
               # TODO: Consider adding feature description and comments.
               name = "#{feature.keyword}: #{feature.name}"
+              tags = feature.tags.map(&:name)
+              tags = tags.map{ |x| {:key => "tags",:value =>  x} }
               description = feature.file
               type = :TEST
               attribute = [{:key => "feature", :value => "#{feature.name}"}]
+              attribute.concat(tags)
             end
             #is_created = false
             # if parallel? && name.include?("Folder:")
