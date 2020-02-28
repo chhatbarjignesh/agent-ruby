@@ -172,9 +172,8 @@ module ReportPortal
               # TODO: Consider adding feature description and comments.
               name = "#{feature.keyword}: #{feature.name}"
               description = feature.file
-              tags = feature.tags.map(&:name)
               type = :TEST
-              attribute = [{"key" => "feature", "value" => "#{feature.name}"}]
+              attribute = [{:key => "feature", :value => "#{feature.name}"}]
             end
             #is_created = false
             # if parallel? && name.include?("Folder:")
@@ -213,10 +212,10 @@ module ReportPortal
             #  child_node = Tree::TreeNode.new(path_component, item)
             #  parent_node << child_node
             #else
-              item = ReportPortal::TestItem.new(name: name, type: type, id: nil, start_time: time_to_send(desired_time), description: description, closed: false, tags: tags, attributes: attribute)
-              child_node = Tree::TreeNode.new(path_component, item)
-              parent_node << child_node
-              item.id = ReportPortal.start_item(child_node)
+            item = ReportPortal::TestItem.new(name: name, type: type, id: nil, start_time: time_to_send(desired_time), description: description, closed: false, attributes: attribute, tags: '')
+            child_node = Tree::TreeNode.new(path_component, item)
+            parent_node << child_node
+            item.id = ReportPortal.start_item(child_node)
             #end
           end
           parent_node = child_node
