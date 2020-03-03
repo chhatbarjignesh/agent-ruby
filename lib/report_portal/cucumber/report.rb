@@ -52,7 +52,7 @@ module ReportPortal
           start_feature_with_parentage(feature, desired_time)
         end
 
-        name = "#{test_case.keyword}: #{test_case.name.gsub(/Examples \(#\d\)$/, "(Line # #{test_case.location.line})")}"
+        name = "#{test_case.keyword}: #{test_case.name.gsub(/Examples \(#\d\)$/, "Line (##{test_case.location.line})")}"
         description = test_case.location.to_s
         tags = test_case.tags.map(&:name)
         type = :STEP
