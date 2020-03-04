@@ -53,7 +53,7 @@ module ReportPortal
           end_feature(desired_time) if @feature_node
           start_feature_with_parentage(feature, desired_time)
         end
-        test_case_name = title == '' ? test_case.name : test_case.name.gsub(/Examples \(#\d*\)$/, "Title: #{title}")
+        test_case_name = title.empty? ? test_case.name : test_case.name.gsub(/Examples \(#\d*\)$/, "Title: #{title}")
         name = "#{test_case.keyword}: #{test_case_name}"
         description = test_case.location.to_s
         tags = test_case.tags.map(&:name)
