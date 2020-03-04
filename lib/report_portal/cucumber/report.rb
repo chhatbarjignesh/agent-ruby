@@ -46,13 +46,20 @@ module ReportPortal
 
       def test_case_started(event, desired_time = ReportPortal.now) # TODO: time should be a required argument
         test_case = event.test_case
+        title = ''
+        test_case.test_steps.each do |test_step|
+          if test_step.to_s.match(/I output "(.*)"$/)
+            title = "Title: #{test_step.to_s[/\"(.*?)"/,1]}"
+            break
+          end
+        end
         feature = test_case.feature
         unless same_feature_as_previous_test_case?(feature)
           end_feature(desired_time) if @feature_node
           start_feature_with_parentage(feature, desired_time)
         end
 
-        name = "#{test_case.keyword}: #{test_case.name.gsub(/Examples \(#\d\)$/, "Line (##{test_case.location.line})")}"
+        name = "#{test_case.keyword}: #{test_case.name.gsub(/Examples \(#\d*\)$/, "#{title}")}"
         description = test_case.location.to_s
         tags = test_case.tags.map(&:name)
         type = :STEP
