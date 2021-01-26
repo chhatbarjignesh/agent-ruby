@@ -1,5 +1,5 @@
 require 'cucumber/formatter/io'
-require 'cucumber/formatter/hook_query_visitor'
+require 'cucumber/formatter/query/hook_by_test_step'
 require 'tree'
 require 'securerandom'
 
@@ -48,18 +48,19 @@ module ReportPortal
         test_case = event.test_case
         step = test_case.test_steps.find { |test_step| test_step.to_s.match(/I output "(.*)"$/)}
         title = "#{step.to_s[/\"(.*?)"/,1]}"
-        feature = test_case.feature
-        unless same_feature_as_previous_test_case?(feature)
+        #feature = test_case.feature
+        unless same_feature_as_previous_test_case?(test_case)
           end_feature(desired_time) if @feature_node
-          start_feature_with_parentage(feature, desired_time)
+          start_feature_with_parentage(test_case, desired_time)
         end
         test_case_name = title.empty? ? test_case.name : test_case.name.gsub(/Examples \(#\d*\)$/, "Title: #{title}")
-        name = "#{test_case.keyword}: #{test_case_name}"
+        feature_name = ::Gherkin::Parser.new.parse(File.read(test_case.location.to_s.split(':').first()))[:feature][:name]
+        name = "#{test_case_name}"
         description = test_case.location.to_s
         tags = test_case.tags.map(&:name)
         type = :STEP
         tags = tags.map{ |x| {:key => "tags",:value =>  x} }
-        attribute = [{:key => "feature", :value => "#{feature.name}"}]
+        attribute = [{:key => "feature", :value => "#{feature_name}"}]
         attribute.concat(tags)
 
         ReportPortal.current_scenario = ReportPortal::TestItem.new(name: name, type: type, id: nil, start_time: time_to_send(desired_time), description: description, closed: false, tags: '', attributes: attribute)
@@ -82,9 +83,9 @@ module ReportPortal
 
       def test_step_started(event, desired_time = ReportPortal.now)
         test_step = event.test_step
-        if step?(test_step) # `after_test_step` is also invoked for hooks
-          step_source = test_step.source.last
-          message = "-- #{step_source.keyword}#{step_source.text} --"
+        if !test_step.hook?# `after_test_step` is also invoked for hooks
+          step_source = test_step
+          message = "-- #{test_step.text} --"
           if step_source.multiline_arg.doc_string?
             message << %(\n"""\n#{step_source.multiline_arg.content}\n""")
           elsif step_source.multiline_arg.data_table?
@@ -104,19 +105,19 @@ module ReportPortal
                              ex = result.exception
                              sprintf("%s: %s\n  %s", ex.class.name, ex.message, ex.backtrace.join("\n  "))
                            else
-                             sprintf("Undefined step: %s:\n%s", test_step.text, test_step.source.last.backtrace_line)
+                             sprintf("Undefined step: %s:\n%s", test_step.text, test_step.text.last.backtrace_line)
                            end
           ReportPortal.send_log(:error, exception_info, time_to_send(desired_time))
         end
 
         if status != :passed
           log_level = (status == :skipped) ? :warn : :error
-          step_type = if step?(test_step)
+          step_type = if !test_step.hook?
                         'Step'
                       else
-                        hook_class_name = test_step.source.last.class.name.split('::').last
+                        #hook_class_name = test_step.source.last.class.name.split('::').last
                         location = test_step.location
-                        "#{hook_class_name} at `#{location}`"
+                        "at `#{location}`"
                       end
           ReportPortal.send_log(log_level, "#{step_type} #{status}", time_to_send(desired_time))
         end
@@ -132,8 +133,12 @@ module ReportPortal
         end
       end
 
-      def puts(message, desired_time = ReportPortal.now)
-        ReportPortal.send_log(:info, message, time_to_send(desired_time))
+      def attach(message, desired_time = ReportPortal.now)
+          if message.last == 'text/x.cucumber.log+plain'
+            ReportPortal.send_log(:info, message.first, time_to_send(desired_time))
+          else
+            ReportPortal.send_file(:info, message.first, message.first, time_to_send(desired_time), message.last)
+          end
       end
 
       def embed(src, mime_type, label, desired_time = ReportPortal.now)
@@ -156,15 +161,15 @@ module ReportPortal
         ReportPortal.last_used_time = time_to_send
       end
 
-      def same_feature_as_previous_test_case?(feature)
-        @feature_node && @feature_node.name == feature.location.file.split(File::SEPARATOR).last
+      def same_feature_as_previous_test_case?(test_case)
+        @feature_node && @feature_node.name == test_case.location.file.split(File::SEPARATOR).last
       end
 
-      def start_feature_with_parentage(feature, desired_time)
+      def start_feature_with_parentage(test_case, desired_time)
         parent_node = @root_node
         child_node = nil
-        path_components = feature.location.file.split(File::SEPARATOR)
-        path_components_no_feature = feature.location.file.split(File::SEPARATOR)[0...path_components.size - 1]
+        path_components = test_case.location.file.split(File::SEPARATOR)
+        path_components_no_feature = test_case.location.file.split(File::SEPARATOR)[0...path_components.size - 1]
         path_components.each_with_index do |path_component, index|
           child_node = parent_node[path_component]
           unless child_node # if child node was not created yet
@@ -175,12 +180,15 @@ module ReportPortal
               type = :SUITE
             else
               # TODO: Consider adding feature description and comments.
-              name = "#{feature.keyword}: #{feature.name}"
-              tags = feature.tags.map(&:name)
+              feature_name = ::Gherkin::Parser.new.parse(File.read(test_case.location.to_s.split(':').first()))[:feature][:name]
+#              feature_keyword = ::Gherkin::Parser.new.parse(File.read(test_case.location.to_s.split(':').first()))[:feature][:keyword]
+#              feature_file = ::Gherkin::Parser.new.parse(File.read(test_case.location.to_s.split(':').first()))[:feature][:file]
+              name = "#{feature_name}"
+              tags = test_case.tags.map(&:name)
               tags = tags.map{ |x| {:key => "tags",:value =>  x} }
-              description = feature.file
+              description = test_case.location.to_s.split(':').first
               type = :TEST
-              attribute = [{:key => "feature", :value => "#{feature.name}"}]
+              attribute = [{:key => "feature", :value => "#{feature_name}"}]
               attribute.concat(tags)
             end
             #is_created = false
@@ -245,10 +253,6 @@ module ReportPortal
             ReportPortal.finish_item(node.content)
           end
         end
-      end
-
-      def step?(test_step)
-        !::Cucumber::Formatter::HookQueryVisitor.new(test_step).hook?
       end
     end
   end

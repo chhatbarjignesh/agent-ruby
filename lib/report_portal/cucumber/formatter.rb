@@ -19,8 +19,8 @@ module ReportPortal
         config.on_event(:test_run_finished) { finish_message_processing }
       end
 
-      def puts(message)
-        process_message(:puts, message)
+      def attach(*message)
+        process_message(:attach, message)
         @io.puts(message)
         @io.flush
       end
