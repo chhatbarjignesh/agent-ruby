@@ -105,7 +105,7 @@ module ReportPortal
                              ex = result.exception
                              sprintf("%s: %s\n  %s", ex.class.name, ex.message, ex.backtrace.join("\n  "))
                            else
-                             sprintf("Undefined step: %s:\n%s", test_step.text, test_step.text.last.backtrace_line)
+                             sprintf("Undefined step: %s:\n%s", test_step.text, test_step.text.backtrace_line)
                            end
           ReportPortal.send_log(:error, exception_info, time_to_send(desired_time))
         end
