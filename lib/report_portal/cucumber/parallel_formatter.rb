@@ -7,7 +7,7 @@ module ReportPortal
       private
 
       def report
-        @report ||= ReportPortal::Cucumber::ParallelReport.new
+        @report ||= ReportPortal::Cucumber::ParallelReport.new(ReportPortal.now)
       end
     end
   end

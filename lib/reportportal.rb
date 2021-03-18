@@ -17,10 +17,14 @@ module ReportPortal
   LOG_LEVELS = { error: 'ERROR', warn: 'WARN', info: 'INFO', debug: 'DEBUG', trace: 'TRACE', fatal: 'FATAL', unknown: 'UNKNOWN' }.freeze
 
   class << self
-    attr_accessor :launch_id, :current_scenario
+    attr_accessor :launch_id, :current_scenario, :last_used_time, :uuid
 
     def now
       (current_time.to_f * 1000).to_i
+    end
+
+    def file_with_uuid
+      Pathname(Dir.tmpdir) + "uuid_of_launch_id_#{@launch_id}.lck"
     end
 
     def status_to_level(status)
@@ -39,6 +43,8 @@ module ReportPortal
     def start_launch(description, start_time = now)
       data = { name: Settings.instance.launch, start_time: start_time, tags: Settings.instance.tags, description: description, mode: Settings.instance.launch_mode }
       @launch_id = send_request(:post, 'launch', json: data)['id']
+      @uuid = send_request(:get, "launch/uuid/#{@launch_id}")['id']
+      File.open(file_with_uuid, 'w') { |file| file.write(@uuid) }
     end
 
     def finish_launch(end_time = now)
@@ -50,7 +56,7 @@ module ReportPortal
       path = 'item'
       path += "/#{item_node.parent.content.id}" unless item_node.parent&.is_root?
       item = item_node.content
-      data = { start_time: item.start_time, name: item.name[0, 255], type: item.type.to_s, launch_id: @launch_id, description: item.description }
+      data = { start_time: item.start_time, name: item.name[0, 255], type: item.type.to_s, launch_id: @launch_id, description: item.description, attributes: item.attributes }
       data[:tags] = item.tags unless item.tags.empty?
       event_bus.broadcast(:prepare_start_item_request, request_data: data)
       send_request(:post, path, json: data)['id']
@@ -124,9 +130,9 @@ module ReportPortal
     # needed for parallel formatter
     def item_id_of(name, parent_node)
       path = if parent_node.is_root? # folder without parent folder
-               "item?filter.eq.launch=#{@launch_id}&filter.eq.name=#{CGI.escape(name)}&filter.size.path=0"
+               "item?filter.eq.launchid=#{@launch_id}&filter.eq.name=#{URI.escape(name)}&filter.eq.path=0"
              else
-               "item?filter.eq.parent=#{parent_node.content.id}&filter.eq.name=#{CGI.escape(name)}"
+               "item?filter.eq.launchid=#{@launch_id}&filter.eq.parent=#{parent_node.content.id}&filter.eq.name=#{URI.escape(name)}"
              end
       data = send_request(:get, path)
       if data.key? 'content'
@@ -137,9 +143,9 @@ module ReportPortal
     # needed for parallel formatter
     def close_child_items(parent_id)
       path = if parent_id.nil?
-               "item?filter.eq.launch=#{@launch_id}&filter.size.path=0&page.page=1&page.size=100"
+               "item?filter.eq.launchid=#{@launch_id}&filter.eq.path=0&page.page=1&page.size=100"
              else
-               "item?filter.eq.parent=#{parent_id}&page.page=1&page.size=100"
+               "item?filter.eq.launchid=#{@launch_id}&filter.eq.parent=#{parent_id}&page.page=1&page.size=100"
              end
       ids = []
       loop do
